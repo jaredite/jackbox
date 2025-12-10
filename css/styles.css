@@ -1,0 +1,194 @@
+:root {
+    --color1: rgb(39, 43, 118);
+    --color2: rgb(6, 102, 212);
+    --accent: white;
+}
+body{
+    margin: 5px;
+    background-color: var(--color2);
+}
+.textcommon{
+    font-family: "Segoe UI Semibold", "Segoe UI", sans-serif;
+    color: white;
+    text-align: center;
+    font-size: 16px;
+}
+.header-margin{
+    margin-top: 35px;
+    text-align: center;
+}
+.header{
+    background-color: var(--color1);
+    display: inline-block;
+    margin: 0 auto;
+    text-align: center;
+    font-weight: bold;
+    top: 0px;
+    bottom: auto;
+    padding: 10px;
+    border: 5px solid white;
+    border-radius: 20px;
+}
+.nav{
+    list-style-type: none;
+    margin: 10px;
+    padding: 0px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.nav li{
+    flex: 1;
+    text-align: center;
+    width: 160px;
+}
+.nav a{
+    text-decoration: none;
+    margin: 0px;
+    font-weight: bold;
+    color: white;
+    padding: 10px;
+    border: 2px solid white;
+    border-radius: 5px;
+    display: block;
+    font-family: "Segoe UI Semibold", "Segoe UI", sans-serif;
+    white-space: nowrap;
+}
+.nav a:hover{
+    background-color: white;
+    color: var(--color1);
+}
+.games-grid{
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 35px;
+    padding: 20px;
+    margin-top: 20px;
+}
+.game-card{
+    background-color: var(--color1);
+    border: 5px solid white;
+    border-radius: 10px;
+    width: 275px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+.game-card img{
+    height: 120px;
+    border-radius: 8px;
+    border: 2px solid white;
+    padding: 0;
+
+}
+.game-card:hover {
+    transform: scale(1.08);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+.tag{
+    list-style-type: none;
+    margin: 10px;
+    padding: 0px;
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+.tag li{
+    text-align: center;
+    max-width: 125px;
+    font-size: 16px;
+    margin: 0px;
+    font-weight: bold;
+    color: white;
+    padding: 5px;
+    border: 1px solid white;
+    border-radius: 4px;
+    display: block;
+    font-family: sans-serif;
+    white-space: nowrap;
+    background-color: var(--color2);
+}
+.about-text{
+    font-size: 20px;
+}
+.about-section{
+    background-color: var(--color1);
+    border: 5px solid white;
+    border-radius: 10px;
+    width: 90%;
+    padding-left: 30px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: block;
+    text-align: center;
+    margin: 35px auto 0 auto;
+    padding: 20px;
+}
+.about-section ol{
+    text-align: left;
+    margin-left: 5%;
+}
+iframe{
+    display: block;
+    margin: 20px auto;
+    border: 5px solid white;
+    border-radius: 10px;
+    text-align: center;
+}
+.footer{
+    text-align: center;
+    font-size: smaller;
+    font-family: "Segoe UI Semibold", "Segoe UI", sans-serif;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    height: 35px;
+    line-height: 35px;
+    background-color: lightgray;
+    position: fixed;
+}
+h1{
+    font-size: 50px;
+    display: inline;
+    font-family: "Palatino Linotype", serif;
+    font-weight: bold;
+    font-style: italic;
+}
+h2{
+    font-size: 40px;
+    font-family: "Palatino Linotype", serif;
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 5px;
+    margin-bottom: 0px;
+    text-align: center;
+}
+h3{
+    font-size: 30px;
+    padding: 0;
+    margin-top: 10px;
+    margin-bottom: 0px;
+    font-family: "Palatino Linotype", serif;
+    font-weight: bold;
+    
+}
+h5{
+    font-size: 20px;
+    margin-top: 5px;
+    margin-bottom: 0px;
+    font-style: italic;
+}
+h6{
+    font-size: 16px;
+    margin-top: 5px;
+    margin-bottom: 0px;
+    font-style: italic;
+}
+p{
+    margin-top: 3px;
+}
+a{
+    color: white;
+}

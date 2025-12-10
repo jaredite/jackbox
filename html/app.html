@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scoreboard App</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <!-- Uses shared styles.css for colors & typography -->
+  <style>
+    .page { max-width: 1000px; margin: 0 auto 60px auto; }
+    .hidden { display: none; }
+    .players-list { margin-top: 20px; }
+    .player-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .player-row input[type="text"] { padding: 5px; border-radius: 4px; border: 1px solid #ccc; min-width: 180px; }
+    .btn { padding: 8px 14px; border-radius: 6px; border: 2px solid var(--accent); background-color: var(--color1); color: white; cursor: pointer; font-family: "Segoe UI Semibold","Segoe UI",sans-serif; }
+    .btn.secondary { background-color: transparent; color: white; }
+    .btn-small { padding: 4px 8px; font-size: 12px; }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .top-controls { margin: 20px 0; display:flex; flex-wrap:wrap; justify-content:center; gap:10px; align-items:center;}
+    .game-select-container { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; }
+    .game-select-container input[type="text"],
+    .game-select-container select { padding:5px; border-radius:4px; border:1px solid #ccc; min-width: 220px; }
+    table.scoreboard { width:100%; border-collapse: collapse; background-color: var(--color1); color: white; margin-top: 10px; }
+    table.scoreboard th, table.scoreboard td { border:1px solid white; padding:6px 8px; text-align:center; }
+    table.scoreboard th { background-color: rgba(0,0,0,0.2); }
+    .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index: 1000; }
+    .modal { background-color: var(--color1); color:white; padding: 15px 20px; border-radius: 10px; border: 3px solid white; max-width: 600px; width: 90%; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .modal-header h3 { margin:0; }
+    .modal-close { border:none; background:transparent; color:white; font-size:22px; cursor:pointer; }
+    .modal-body { max-height: 60vh; overflow-y:auto; }
+    .modal-footer { margin-top: 15px; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;}
+    .settings-group { margin-bottom:12px; }
+    .settings-group h4 { margin:8px 0; font-family:"Segoe UI Semibold","Segoe UI",sans-serif; }
+    .checkbox-list { display:flex; flex-wrap:wrap; gap:8px; }
+    .checkbox-list label { background-color: var(--color2); padding:4px 8px; border-radius:4px; border:1px solid white; font-size: 14px; white-space:nowrap; cursor:pointer; }
+    .checkbox-list input { margin-right:4px; }
+    .scores-player-row { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px; }
+    .scores-player-row select { padding:3px 5px; border-radius:4px; width:5ch; }
+    .scores-player-row span { flex:1; text-align:left; }
+    .warning-text { font-size: 13px; font-style: italic; margin-top:4px; }
+    .exit-container { margin-top:25px; text-align:center; }
+    .modal-body input[type="text"],
+    .modal-body input[type="number"],
+    .modal-body select {
+      padding:5px;
+      border-radius:4px;
+      border:1px solid #ccc;
+      box-sizing:border-box;
+    }
+    .modal-body input[type="number"] {
+      width:6ch; /* fits up to 6 digits */
+    }
+    .modal-body input[type="text"] {
+      width:25ch; /* about 25 characters */
+      max-width:100%;
+    }
+    .modal-body select {
+      width:auto;
+      max-width:100%;
+    }
+  </style>
+</head>
+<body class="textcommon">
+  <div class="header-margin"> 
+    <div class="header textcommon">
+      <h1>Jackbox Scoreboard App</h1>
+      <ul class="nav">
+        <li><a href="../index.html">Collection</a></li>
+        <li><a href="about.html">About Jackbox</a></li>
+        <li><a href="app.html">Scoreboard App</a></li>
+        <li><a href="https://jaredite.github.io/resume/" target="_blank">About Me</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="startup-page" class="page">
+    <div class="textcommon">
+      <h2>Setup Players</h2>
+      <p>Add between 3 and 16 players and give them names.</p>
+      <div id="startup-players" class="players-list"></div>
+      <button id="startup-add-player-btn" class="btn">Add Player</button>
+    </div>
+    <div class="textcommon" style="margin-top:20px;">
+      <button id="placement-settings-btn" class="btn secondary">Placement Modifiers</button>
+      <button id="random-settings-btn" class="btn secondary">Random Games Settings</button>
+    </div>
+    <div class="textcommon" style="margin-top:20px;">
+      <button id="start-game-btn" class="btn">Start Scoreboard</button>
+    </div>
+  </section>
+
+  <section id="scoreboard-page" class="page hidden">
+    <div class="textcommon">
+      <h2>Current Standings</h2>
+      <p>Select a game, then click "Add Scores" to record a new round.</p>
+    </div>
+    <div class="top-controls">
+      <div class="game-select-container">
+        <label for="game-select-input">Game:</label>
+        <input id="game-select-input" type="text" list="game-list" placeholder="Select or search game">
+        <datalist id="game-list"></datalist>
+        <button id="random-game-btn" class="btn secondary">Random Game</button>
+      </div>
+      <div class="buttons-group">
+        <button id="add-scores-btn" class="btn">Add Scores</button>
+        <button id="edit-scores-btn" class="btn secondary" disabled>Edit Scores</button>
+        <button id="scoreboard-add-player-btn" class="btn secondary">Add Player</button>
+      </div>
+    </div>
+    <div class="textcommon">
+      <table class="scoreboard">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Points per Game</th>
+            <th>Points</th>
+            <th>Games Played</th>
+            <th>Wins</th>
+            <th>Remove</th>
+            <th>Send to Audience</th>
+          </tr>
+        </thead>
+        <tbody id="scoreboard-body"></tbody>
+      </table>
+    </div>
+
+    <div id="audience-section" class="textcommon hidden">
+      <h2>Audience Standings</h2>
+      <table class="scoreboard">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Points per Game</th>
+            <th>Points</th>
+            <th>Games Played</th>
+            <th>Wins</th>
+            <th>Remove</th>
+            <th>Send to Game</th>
+          </tr>
+        </thead>
+        <tbody id="audience-scoreboard-body"></tbody>
+      </table>
+    </div>
+
+    <div class="exit-container">
+      <button id="exit-btn" class="btn secondary">Exit</button>
+    </div>
+  </section>
+
+  <section id="final-page" class="page hidden">
+    <div class="textcommon">
+      <h2>Final Scores</h2>
+      <p>These are the final standings for this session, including all active players and audience members.</p>
+      <table class="scoreboard">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Points per Game</th>
+            <th>Points</th>
+            <th>Games Played</th>
+            <th>Wins</th>
+          </tr>
+        </thead>
+        <tbody id="final-scoreboard-body"></tbody>
+      </table>
+    </div>
+    <div class="exit-container">
+      <button id="final-close-btn" class="btn">Close</button>
+    </div>
+  </section>
+
+  <!-- Placement Modifiers Modal -->
+  <div id="placement-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Placement Modifiers</h3>
+        <button class="modal-close" data-close="placement-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <label>First place bonus:
+            <input type="number" id="bonus1-input" min="0" max="99">
+          </label>
+        </div>
+        <div class="settings-group">
+          <label>Second place bonus:
+            <input type="number" id="bonus2-input" min="0" max="99">
+          </label>
+        </div>
+        <p class="warning-text">First place must always get more bonus than second place.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="placement-save-btn" class="btn">Save &amp; Close</button>
+        <button class="btn secondary" data-close="placement-modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Random Games Settings Modal -->
+  <div id="random-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Random Games Settings</h3>
+        <button class="modal-close" data-close="random-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <h4>Filter by Pack</h4>
+          <div id="random-packs" class="checkbox-list"></div>
+        </div>
+        <div class="settings-group">
+          <h4>Standalone Games</h4>
+          <div id="random-standalones" class="checkbox-list"></div>
+        </div>
+        <div class="settings-group">
+          <h4>Filter by Tags</h4>
+          <div id="random-tags" class="checkbox-list"></div>
+          <p class="warning-text">If a tag is unchecked, any game with that tag will not be considered.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="random-save-btn" class="btn">Save &amp; Close</button>
+        <button class="btn secondary" data-close="random-modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Scores Modal -->
+  <div id="add-scores-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Scores</h3>
+        <button class="modal-close" data-close="add-scores-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <label for="add-scores-game-select">Game for this round:</label>
+          <select id="add-scores-game-select">
+          </select>
+        </div>
+        <p class="warning-text" id="add-scores-game-label"></p>
+        <div id="add-scores-players"></div>
+        <p class="warning-text">Assign placements for each player in the game. Ties are allowed. Audience members are not included.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="add-scores-confirm-btn" class="btn">Add Scores</button>
+        <button class="btn secondary" data-close="add-scores-modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Scores Modal -->
+  <div id="edit-scores-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Edit Past Scores</h3>
+        <button class="modal-close" data-close="edit-scores-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <label for="edit-round-select">Select Round:</label>
+          <select id="edit-round-select"></select>
+        </div>
+        <p class="warning-text" id="edit-scores-game-label"></p>
+        <div id="edit-scores-players"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="edit-scores-save-btn" class="btn">Save Changes</button>
+        <button class="btn secondary" data-close="edit-scores-modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Player Modal (Scoreboard) -->
+  <div id="add-player-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Player</h3>
+        <button class="modal-close" data-close="add-player-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <label for="new-player-name-input">Player name:</label>
+          <input type="text" id="new-player-name-input" placeholder="Enter player name">
+        </div>
+        <p class="warning-text">If more than 16 players are added, extra players will join as audience members.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="add-player-confirm-btn" class="btn">Add Player</button>
+        <button class="btn secondary" data-close="add-player-modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exit Confirmation Modal -->
+  <div id="exit-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Exit Scoreboard</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to exit? You'll see the final scores for this session before returning to setup. Player names and scores will then reset, but your random game and placement settings will be kept.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="exit-confirm-btn" class="btn">Yes, Show Final Scores</button>
+        <button class="btn secondary" data-close="exit-modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const PACKED_GAMES = [["Bidiots","Party Pack 2",3,6,["Drawing"]],["Blather 'Round","Party Pack 7",2,6,["Trivia"]],["Bomb Corp.","Party Pack 2",1,4,["Collaboration"]],["Bracketeering","Party Pack 4",3,16,["Writing","Voting"]],["Champ’d Up","Party Pack 7",3,8,["Drawing","Writing","Voting"]],["Civic Doodle","Party Pack 4",3,8,["Drawing","Voting"]],["Dictionarium","Party Pack 6",3,8,["Writing","Voting"]],["Dodo Re Mi","Party Pack 10",1,9,["Collaboration"]],["Drawful Animate","Party Pack 8",3,10,["Drawing"]],["Earwax","Party Pack 2",3,8,["Voting"]],["Fakin’ It","Party Pack 3",3,6,["Secret Role","Voting"]],["Fibbage 2","Party Pack 2",2,8,["Writing","Trivia"]],["Fibbage 3","Party Pack 4",2,8,["Writing","Trivia"]],["Fibbage 4","Party Pack 9",2,8,["Writing","Trivia"]],["FixyText","Party Pack 10",3,8,["Writing","Voting"]],["Guesspionage","Party Pack 3",2,8,["Trivia"]],["Hypnotorious","Party Pack 10",4,8,["Secret Role","Voting"]],["Job Job","Party Pack 8",3,10,["Writing","Voting"]],["Joke Boat","Party Pack 6",3,8,["Writing","Presentation","Voting"]],["Junktopia","Party Pack 9",3,8,["Writing","Voting"]],["Mad Verse City","Party Pack 5",3,8,["Writing","Presentation","Voting"]],["Monster Seeking Monster","Party Pack 4",3,7,["Writing","Secret Role"]],["Nonsensory","Party Pack 9",3,8,["Drawing","Writing"]],["Patently Stupid","Party Pack 5",3,8,["Drawing","Writing","Presentation","Voting"]],["Push The Button","Party Pack 6",4,10,["Secret Role","Collaboration","Mini-games","Voting"]],["Quiplash 2","Party Pack 3",3,8,["Writing","Voting"]],["Quiplash 3","Party Pack 7",3,8,["Writing","Voting"]],["Quiplash XL","Party Pack 2",3,8,["Writing","Voting"]],["Quixort","Party Pack 9",1,10,["Trivia","Collaboration"]],["Role Models","Party Pack 6",3,6,["Voting"]],["Roomerang","Party Pack 9",4,9,["Writing","Voting"]],["Split the Room","Party Pack 5",3,8,["Writing","Voting"]],["Survive the Internet","Party Pack 4",3,8,["Writing","Voting"]],["Talking Points","Party Pack 7",3,8,["Presentation","Voting"]],["Tee K.O.","Party Pack 3",3,8,["Drawing","Writing","Voting"]],["Tee K.O. 2","Party Pack 10",3,8,["Drawing","Writing","Voting"]],["The Devils and the Details","Party Pack 7",3,8,["Mini-games","Collaboration"]],["The Jackbox Survey Scramble","Standalone Game",2,10,["Trivia","Mini-games","Collaboration"]],["The Poll Mine","Party Pack 8",2,10,["Trivia","Collaboration"]],["The Wheel of Enormous Proportions","Party Pack 8",2,8,["Trivia"]],["Time Jinx","Party Pack 10",1,8,["Trivia"]],["Trivia Murder Party","Party Pack 3",1,8,["Trivia","Mini-games"]],["Trivia Murder Party 2","Party Pack 6",1,8,["Trivia","Mini-games"]],["Weapons Drawn","Party Pack 8",4,8,["Drawing","Secret Role","Voting"]],["You Don’t Know Jack: Full Stream","Party Pack 5",1,8,["Trivia"]],["Zeeple Dome","Party Pack 5",1,6,["Mini-games"]]];
+  (function() {
+    const JACKBOX_GAMES = PACKED_GAMES.map(g => ({
+      name: g[0],
+      pack: g[1],
+      minPlayers: g[2],
+      maxPlayers: g[3],
+      tags: g[4] || []
+    }));
+
+    const ALL_TAGS = Array.from(new Set(JACKBOX_GAMES.flatMap(g => g.tags))).sort();
+    const STANDALONE_PACK = "Standalone Game";
+    const ALL_PACKS = Array.from(new Set(JACKBOX_GAMES.map(g => g.pack).filter(p => p !== STANDALONE_PACK))).sort((a, b) => {
+      const getOrder = (p) => {
+        const m = p.match(/Party Pack (\d+)/);
+        if (m) return parseInt(m[1], 10);
+        return 999;
+      };
+      return getOrder(a) - getOrder(b);
+    });
+    const STANDALONE_GAMES = JACKBOX_GAMES.filter(g => g.pack === STANDALONE_PACK).map(g => g.name).sort();
+
+    const STATE_KEY = "jackboxScoreboardState_v1";
+    let currentPage = 'startup';
+
+    function saveState(pageOverride) {
+      try {
+        const state = {
+          players: players.map(p => ({ id: p.id, name: p.name, status: p.status })),
+          nextPlayerId,
+          rounds,
+          nextRoundId,
+          currentGameName: currentGame ? currentGame.name : null,
+          settings: {
+            bonus1: settings.bonus1,
+            bonus2: settings.bonus2,
+            enabledPacks: Array.from(settings.enabledPacks),
+            enabledTags: Array.from(settings.enabledTags),
+            enabledStandaloneGames: Array.from(settings.enabledStandaloneGames)
+          },
+          gameStarted,
+          lastPage: pageOverride || currentPage
+        };
+        localStorage.setItem(STATE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error("Failed to save scoreboard state", e);
+      }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STATE_KEY);
+        if (!raw) return false;
+        const state = JSON.parse(raw);
+
+        players = (state.players || []).map(p => ({
+          id: p.id,
+          name: p.name,
+          status: p.status || 'active',
+          points: 0,
+          gamesPlayed: 0,
+          wins: 0
+        }));
+
+        rounds = state.rounds || [];
+
+        nextPlayerId = state.nextPlayerId || (players.reduce((m, p) => Math.max(m, p.id || 0), 0) + 1) || 1;
+        nextRoundId = state.nextRoundId || (rounds.reduce((m, r) => Math.max(m, r.id || 0), 0) + 1) || 1;
+
+        if (state.settings) {
+          if (typeof state.settings.bonus1 === 'number') settings.bonus1 = state.settings.bonus1;
+          if (typeof state.settings.bonus2 === 'number') settings.bonus2 = state.settings.bonus2;
+          settings.enabledPacks = new Set(state.settings.enabledPacks || ALL_PACKS);
+          settings.enabledTags = new Set(state.settings.enabledTags || ALL_TAGS);
+          settings.enabledStandaloneGames = new Set(state.settings.enabledStandaloneGames || STANDALONE_GAMES);
+        }
+
+        if (state.currentGameName) {
+          currentGame = JACKBOX_GAMES.find(g => g.name === state.currentGameName) || null;
+        } else {
+          currentGame = null;
+        }
+
+        gameStarted = !!state.gameStarted;
+        const lastPage = state.lastPage || 'startup';
+
+        recomputeStats();
+        renderPlayersSetup();
+        renderScoreboard();
+        refreshGameOptions();
+
+        if (lastPage === 'scoreboard' && gameStarted) {
+          showPage('scoreboard');
+        } else if (lastPage === 'final' && getNonRemovedPlayers().length > 0) {
+          renderFinalScoreboard();
+          showPage('final');
+        } else {
+          showPage('startup');
+        }
+
+        return true;
+      } catch (e) {
+        console.error("Failed to load scoreboard state", e);
+        return false;
+      }
+    }
+
+    const settings = {
+      bonus1: 2,
+      bonus2: 1,
+      enabledPacks: new Set(ALL_PACKS),
+      enabledTags: new Set(ALL_TAGS),
+      enabledStandaloneGames: new Set(STANDALONE_GAMES)
+    };
+
+    let players = [];
+    let nextPlayerId = 1;
+    let rounds = [];
+    let nextRoundId = 1;
+    let currentGame = null;
+    let gameStarted = false;
+
+    let startupPage, scoreboardPage, finalPage,
+        startupPlayersContainer, startGameBtn, startupAddBtn,
+        placementBtn, randomSettingsBtn, randomGameBtn, scoreboardAddPlayerBtn, exitBtn,
+        gameInput, gameListDatalist, addScoresBtn, editScoresBtn,
+        scoreboardBody, audienceScoreboardBody, audienceSection, finalScoreboardBody,
+        addScoresGameSelect;
+
+    function qs(id) {
+      return document.getElementById(id);
+    }
+
+    function getActivePlayers() {
+      return players.filter(p => p.status === 'active');
+    }
+
+    function getAudiencePlayers() {
+      return players.filter(p => p.status === 'audience');
+    }
+
+    function getNonRemovedPlayers() {
+      return players.filter(p => p.status === 'active' || p.status === 'audience');
+    }
+
+    function getTotalPlayers() {
+      return players.filter(p => p.status !== 'removed').length;
+    }
+
+    function showPage(which) {
+      currentPage = which;
+      if (which === 'startup') {
+        startupPage.classList.remove('hidden');
+        scoreboardPage.classList.add('hidden');
+        finalPage.classList.add('hidden');
+      } else if (which === 'scoreboard') {
+        startupPage.classList.add('hidden');
+        scoreboardPage.classList.remove('hidden');
+        finalPage.classList.add('hidden');
+      } else if (which === 'final') {
+        startupPage.classList.add('hidden');
+        scoreboardPage.classList.add('hidden');
+        finalPage.classList.remove('hidden');
+      }
+    }
+
+    function showModal(id) {
+      const el = qs(id);
+      if (el) el.style.display = 'flex';
+    }
+
+    function hideModal(id) {
+      const el = qs(id);
+      if (el) el.style.display = 'none';
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, function(ch) {
+        switch (ch) {
+          case '&': return '&amp;';
+          case '<': return '&lt;';
+          case '>': return '&gt;';
+          case '"': return '&quot;';
+          default: return '&#39;';
+        }
+      });
+    }
+
+    function comparePlayers(a, b) {
+      const ppgA = a.gamesPlayed > 0 ? (a.points / a.gamesPlayed) : 0;
+      const ppgB = b.gamesPlayed > 0 ? (b.points / b.gamesPlayed) : 0;
+      if (ppgB !== ppgA) return ppgB - ppgA;          // Points per game
+      if (b.wins !== a.wins) return b.wins - a.wins;  // Wins
+      if (b.points !== a.points) return b.points - a.points; // Points
+      return a.name.localeCompare(b.name);            // Name
+    }
+
+    function addPlayer(name) {
+      const totalPlayers = getTotalPlayers();
+      if (!gameStarted) {
+        // Setup phase: hard cap 16 players before starting
+        if (totalPlayers >= 16) {
+          alert("Maximum 16 players before starting the scoreboard.");
+          return null;
+        }
+        const newName = name || ("Player " + (totalPlayers + 1));
+        const p = { id: nextPlayerId++, name: newName, status: 'active', points: 0, gamesPlayed: 0, wins: 0 };
+        players.push(p);
+        recomputeStats();
+        renderPlayersSetup();
+        renderScoreboard();
+        refreshGameOptions();
+        saveState();
+        return p;
+      } else {
+        // Scoreboard phase: up to 30 total, only 16 active at once
+        if (totalPlayers >= 30) {
+          alert("Maximum 30 total players (including audience).");
+          return null;
+        }
+        const activeCount = getActivePlayers().length;
+        const newStatus = activeCount < 16 ? 'active' : 'audience';
+        const newName = name || ("Player " + (totalPlayers + 1));
+        const p = { id: nextPlayerId++, name: newName, status: newStatus, points: 0, gamesPlayed: 0, wins: 0 };
+        players.push(p);
+        recomputeStats();
+        renderPlayersSetup();
+        renderScoreboard();
+        refreshGameOptions();
+        saveState();
+        return p;
+      }
+    }
+
+    function removePlayer(id) {
+      const activePlayers = getActivePlayers();
+      const p = players.find(pl => pl.id === id);
+      if (!p) return;
+      if (p.status === 'active' && activePlayers.length <= 3) {
+        alert("You must have at least 3 players in the game.");
+        return;
+      }
+      p.status = 'removed';
+      recomputeStats();
+      renderPlayersSetup();
+      renderScoreboard();
+      refreshGameOptions();
+      saveState();
+    }
+
+    function toggleAudience(id) {
+      const p = players.find(pl => pl.id === id);
+      if (!p) return;
+      const activePlayers = getActivePlayers();
+      if (p.status === 'active') {
+        if (activePlayers.length <= 3) {
+          alert("You must have at least 3 active players in the game.");
+          return;
+        }
+        p.status = 'audience';
+      } else if (p.status === 'audience') {
+        if (activePlayers.length >= 16) {
+          alert("You already have 16 active players in the game.");
+          return;
+        }
+        p.status = 'active';
+      }
+      renderPlayersSetup();
+      renderScoreboard();
+      refreshGameOptions();
+      ensureCurrentGameValid();
+      saveState();
+    }
+
+    function renderPlayersSetup() {
+      startupPlayersContainer.innerHTML = "";
+      const active = getActivePlayers();
+      active.forEach(p => {
+        const row = document.createElement('div');
+        row.className = "player-row";
+        row.innerHTML = '<input type="text" value="' + escapeHtml(p.name) + '" data-player-id="' + p.id + '">' +
+                        '<button class="btn secondary btn-small" data-remove-player="' + p.id + '">Remove</button>';
+        startupPlayersContainer.appendChild(row);
+      });
+
+      startupPlayersContainer.querySelectorAll('input[type="text"]').forEach(input => {
+        input.addEventListener('input', () => {
+          const id = parseInt(input.getAttribute('data-player-id'), 10);
+          const player = players.find(p => p.id === id);
+          if (player) {
+            player.name = input.value;
+            renderScoreboard();
+            saveState();
+          }
+        });
+      });
+
+      startupPlayersContainer.querySelectorAll('button[data-remove-player]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.getAttribute('data-remove-player'), 10);
+          removePlayer(id);
+        });
+      });
+
+      startGameBtn.disabled = active.length < 3;
+    }
+
+    function renderScoreboard() {
+      scoreboardBody.innerHTML = "";
+      audienceScoreboardBody.innerHTML = "";
+
+      const active = getActivePlayers().slice().sort(comparePlayers);
+      const audience = getAudiencePlayers().slice().sort(comparePlayers);
+
+      const activeCount = active.length;
+
+      active.forEach(p => {
+        const tr = document.createElement('tr');
+        const ppgDisplay = p.gamesPlayed > 0 ? (p.points / p.gamesPlayed).toFixed(2) : "0.00";
+        const disableSend = activeCount <= 3 ? ' disabled' : '';
+        tr.innerHTML =
+          '<td>' + escapeHtml(p.name) + '</td>' +
+          '<td>' + ppgDisplay + '</td>' +
+          '<td>' + p.points + '</td>' +
+          '<td>' + p.gamesPlayed + '</td>' +
+          '<td>' + p.wins + '</td>' +
+          '<td><button class="btn secondary btn-small" data-remove-player="' + p.id + '">Remove</button></td>' +
+          '<td><button class="btn secondary btn-small" data-toggle-audience="' + p.id + '"' + disableSend + '>Send to Audience</button></td>';
+        scoreboardBody.appendChild(tr);
+      });
+
+      const showAudience = audience.length > 0;
+      if (showAudience) {
+        audienceSection.classList.remove('hidden');
+      } else {
+        audienceSection.classList.add('hidden');
+      }
+
+      const activeCountForAudience = active.length; // same as activeCount
+      audience.forEach(p => {
+        const tr = document.createElement('tr');
+        const ppgDisplay = p.gamesPlayed > 0 ? (p.points / p.gamesPlayed).toFixed(2) : "0.00";
+        const disableSendGame = activeCountForAudience >= 16 ? ' disabled' : '';
+        tr.innerHTML =
+          '<td>' + escapeHtml(p.name) + '</td>' +
+          '<td>' + ppgDisplay + '</td>' +
+          '<td>' + p.points + '</td>' +
+          '<td>' + p.gamesPlayed + '</td>' +
+          '<td>' + p.wins + '</td>' +
+          '<td><button class="btn secondary btn-small" data-remove-player="' + p.id + '">Remove</button></td>' +
+          '<td><button class="btn secondary btn-small" data-toggle-audience="' + p.id + '"' + disableSendGame + '>Send to Game</button></td>';
+        audienceScoreboardBody.appendChild(tr);
+      });
+
+      // Attach handlers
+      document.querySelectorAll('button[data-remove-player]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.getAttribute('data-remove-player'), 10);
+          removePlayer(id);
+        });
+      });
+
+      document.querySelectorAll('button[data-toggle-audience]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.getAttribute('data-toggle-audience'), 10);
+          toggleAudience(id);
+        });
+      });
+
+      editScoresBtn.disabled = rounds.length === 0;
+      updateTopButtonsState();
+    }
+
+    function renderFinalScoreboard() {
+      finalScoreboardBody.innerHTML = "";
+      const all = getNonRemovedPlayers().slice().sort(comparePlayers);
+      all.forEach(p => {
+        const tr = document.createElement('tr');
+        const ppgDisplay = p.gamesPlayed > 0 ? (p.points / p.gamesPlayed).toFixed(2) : "0.00";
+        tr.innerHTML =
+          '<td>' + escapeHtml(p.name) + '</td>' +
+          '<td>' + ppgDisplay + '</td>' +
+          '<td>' + p.points + '</td>' +
+          '<td>' + p.gamesPlayed + '</td>' +
+          '<td>' + p.wins + '</td>';
+        finalScoreboardBody.appendChild(tr);
+      });
+    }
+
+    function recomputeStats() {
+      players.forEach(p => {
+        p.points = 0;
+        p.gamesPlayed = 0;
+        p.wins = 0;
+      });
+      rounds.forEach(round => {
+        const ids = Object.keys(round.placements).map(id => parseInt(id, 10));
+        const numPlayers = ids.length;
+        ids.forEach(id => {
+          const place = round.placements[id];
+          const player = players.find(p => p.id === id);
+          if (!player) return;
+          let base = numPlayers - (place - 1);
+          let pts = base;
+          if (place === 1) pts += round.bonus1;
+          else if (place === 2) pts += round.bonus2;
+          player.points += pts;
+          player.gamesPlayed += 1;
+          if (place === 1) player.wins += 1;
+        });
+      });
+    }
+
+    function getEligibleGamesForPlayers() {
+      const count = getActivePlayers().length;
+      return JACKBOX_GAMES.filter(g => count >= g.minPlayers && count <= g.maxPlayers);
+    }
+
+    function refreshGameOptions() {
+      const eligible = getEligibleGamesForPlayers();
+      gameListDatalist.innerHTML = "";
+      eligible.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.name;
+        gameListDatalist.appendChild(opt);
+      });
+      ensureCurrentGameValid();
+    }
+
+    function ensureCurrentGameValid() {
+      const count = getActivePlayers().length;
+      if (!currentGame || count < currentGame.minPlayers || count > currentGame.maxPlayers) {
+        currentGame = null;
+        gameInput.value = "";
+      }
+      updateTopButtonsState();
+    }
+
+    function updateTopButtonsState() {
+      const count = getActivePlayers().length;
+      addScoresBtn.disabled = count < 3;
+      editScoresBtn.disabled = rounds.length === 0;
+    }
+
+    function handleGameSelection() {
+      const name = gameInput.value.trim();
+      const count = getActivePlayers().length;
+      const game = JACKBOX_GAMES.find(g => g.name === name && count >= g.minPlayers && count <= g.maxPlayers);
+      currentGame = game || null;
+      updateTopButtonsState();
+      saveState();
+    }
+
+    function getRandomEligibleGames() {
+      const count = getActivePlayers().length;
+      return JACKBOX_GAMES.filter(g => {
+        if (count < g.minPlayers || count > g.maxPlayers) return false;
+        if (g.pack === STANDALONE_PACK) {
+          if (!settings.enabledStandaloneGames.has(g.name)) return false;
+        } else {
+          if (!settings.enabledPacks.has(g.pack)) return false;
+        }
+        if (g.tags && g.tags.length > 0) {
+          for (const tag of g.tags) {
+            if (!settings.enabledTags.has(tag)) return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    function handleRandomGame() {
+      const eligible = getRandomEligibleGames();
+      if (eligible.length === 0) {
+        alert("No games available with the current player count and random settings.");
+        return;
+      }
+      const choice = eligible[Math.floor(Math.random() * eligible.length)];
+      currentGame = choice;
+      gameInput.value = choice.name;
+      updateTopButtonsState();
+      saveState();
+    }
+
+    function openPlacementModal() {
+      qs('bonus1-input').value = settings.bonus1;
+      qs('bonus2-input').value = settings.bonus2;
+      showModal('placement-modal');
+    }
+
+    function savePlacementSettings() {
+      const b1 = parseInt(qs('bonus1-input').value, 10);
+      const b2 = parseInt(qs('bonus2-input').value, 10);
+      if (isNaN(b1) || isNaN(b2)) {
+        alert("Enter valid numbers for both bonuses.");
+        return;
+      }
+      if (b1 <= b2) {
+        alert("First place bonus must be greater than second place bonus.");
+        return;
+      }
+      settings.bonus1 = b1;
+      settings.bonus2 = b2;
+      hideModal('placement-modal');
+      saveState();
+    }
+
+    function openRandomSettingsModal() {
+      const packsContainer = qs('random-packs');
+      const tagsContainer = qs('random-tags');
+      const standalonesContainer = qs('random-standalones');
+      packsContainer.innerHTML = "";
+      tagsContainer.innerHTML = "";
+      standalonesContainer.innerHTML = "";
+
+      ALL_PACKS.forEach(pack => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = settings.enabledPacks.has(pack);
+        input.dataset.pack = pack;
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(" " + pack));
+        packsContainer.appendChild(label);
+      });
+
+      STANDALONE_GAMES.forEach(name => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = settings.enabledStandaloneGames.has(name);
+        input.dataset.standalone = name;
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(" " + name));
+        standalonesContainer.appendChild(label);
+      });
+
+      ALL_TAGS.forEach(tag => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = settings.enabledTags.has(tag);
+        input.dataset.tag = tag;
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(" " + tag));
+        tagsContainer.appendChild(label);
+      });
+
+      showModal('random-modal');
+    }
+
+    function saveRandomSettings() {
+      const packsContainer = qs('random-packs');
+      const tagsContainer = qs('random-tags');
+      const standalonesContainer = qs('random-standalones');
+
+      const newPacks = new Set();
+      packsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) newPacks.add(cb.dataset.pack);
+      });
+
+      const newStandaloneGames = new Set();
+      standalonesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) newStandaloneGames.add(cb.dataset.standalone);
+      });
+
+      if (newPacks.size === 0 && newStandaloneGames.size === 0) {
+        alert("Select at least one pack or standalone game.");
+        return;
+      }
+
+      const newTags = new Set();
+      tagsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) newTags.add(cb.dataset.tag);
+      });
+
+      settings.enabledPacks = newPacks;
+      settings.enabledStandaloneGames = newStandaloneGames;
+      settings.enabledTags = newTags;
+
+      hideModal('random-modal');
+      saveState();
+    }
+
+    function updateAddScoresGameLabel() {
+      const label = qs('add-scores-game-label');
+      const active = getActivePlayers();
+      const count = active.length;
+      if (!currentGame) {
+        label.textContent = "Select a game for this round. Players: " + count +
+          " • Bonuses: +" + settings.bonus1 + " / +" + settings.bonus2;
+      } else {
+        label.textContent = "Game: " + currentGame.name + " • Players: " + count +
+          " • Bonuses: +" + settings.bonus1 + " / +" + settings.bonus2;
+      }
+    }
+
+    function populateAddScoresGameSelect() {
+      const select = addScoresGameSelect;
+      const eligible = getEligibleGamesForPlayers();
+      const currentName = currentGame ? currentGame.name : "";
+      select.innerHTML = "";
+      const placeholder = document.createElement('option');
+      placeholder.value = "";
+      placeholder.textContent = "-- Select Game --";
+      select.appendChild(placeholder);
+      eligible.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.name;
+        opt.textContent = g.name;
+        if (g.name === currentName) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function handleAddScoresGameChange() {
+      const name = addScoresGameSelect.value;
+      const count = getActivePlayers().length;
+      const game = JACKBOX_GAMES.find(g => g.name === name && count >= g.minPlayers && count <= g.maxPlayers);
+      currentGame = game || null;
+      gameInput.value = currentGame ? currentGame.name : "";
+      updateAddScoresGameLabel();
+      updateTopButtonsState();
+    }
+
+    function openAddScoresModal() {
+      const active = getActivePlayers();
+      if (active.length < 3) {
+        alert("You need at least 3 active players in the game to add scores.");
+        return;
+      }
+      const container = qs('add-scores-players');
+      container.innerHTML = "";
+
+      populateAddScoresGameSelect();
+      updateAddScoresGameLabel();
+
+      active.forEach((p, index) => {
+        const row = document.createElement('div');
+        row.className = 'scores-player-row';
+        let optionsHtml = "";
+        for (let place = 1; place <= active.length; place++) {
+          optionsHtml += '<option value="' + place + '"' + (place === index + 1 ? ' selected' : '') + '>' + place + '</option>';
+        }
+        row.innerHTML = '<span>' + escapeHtml(p.name) + '</span>' +
+                        '<select data-player-id="' + p.id + '">' + optionsHtml + '</select>';
+        container.appendChild(row);
+      });
+      showModal('add-scores-modal');
+    }
+
+    function confirmAddScores() {
+      const active = getActivePlayers();
+      if (active.length === 0) {
+        hideModal('add-scores-modal');
+        return;
+      }
+      if (!currentGame) {
+        alert("Please select a game for this round in the dropdown.");
+        return;
+      }
+      if (active.length < currentGame.minPlayers || active.length > currentGame.maxPlayers) {
+        alert("Current number of active players does not fit this game's player limits.");
+        return;
+      }
+      const container = qs('add-scores-players');
+      const selects = container.querySelectorAll('select[data-player-id]');
+      const placements = {};
+      selects.forEach(sel => {
+        const id = parseInt(sel.getAttribute('data-player-id'), 10);
+        const place = parseInt(sel.value, 10);
+        placements[id] = place;
+      });
+      const numPlayers = active.length;
+      const round = {
+        id: nextRoundId++,
+        gameName: currentGame.name,
+        placements: placements,
+        numPlayers: numPlayers,
+        bonus1: settings.bonus1,
+        bonus2: settings.bonus2
+      };
+      rounds.push(round);
+      recomputeStats();
+      renderScoreboard();
+      hideModal('add-scores-modal');
+      saveState();
+    }
+
+    function openEditScoresModal() {
+      if (rounds.length === 0) return;
+      const select = qs('edit-round-select');
+      select.innerHTML = "";
+      rounds.forEach((round, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(round.id);
+        opt.textContent = "Round " + (idx + 1) + ": " + round.gameName;
+        select.appendChild(opt);
+      });
+      loadEditRound();
+      showModal('edit-scores-modal');
+    }
+
+    function loadEditRound() {
+      const select = qs('edit-round-select');
+      const roundId = parseInt(select.value, 10);
+      const round = rounds.find(r => r.id === roundId);
+      if (!round) return;
+      qs('edit-scores-game-label').textContent =
+        "Game: " + round.gameName + " • Players: " + round.numPlayers +
+        " • Bonuses: +" + round.bonus1 + " / +" + round.bonus2;
+      const container = qs('edit-scores-players');
+      container.innerHTML = "";
+      const ids = Object.keys(round.placements).map(id => parseInt(id, 10));
+      ids.forEach(id => {
+        const player = players.find(p => p.id === id);
+        if (!player) return;
+        const place = round.placements[id];
+        const row = document.createElement('div');
+        row.className = 'scores-player-row';
+        let optionsHtml = "";
+        for (let pNum = 1; pNum <= round.numPlayers; pNum++) {
+          optionsHtml += '<option value="' + pNum + '"' + (pNum === place ? ' selected' : '') + '>' + pNum + '</option>';
+        }
+        row.innerHTML = '<span>' + escapeHtml(player.name) + '</span>' +
+                        '<select data-player-id="' + player.id + '">' + optionsHtml + '</select>';
+        container.appendChild(row);
+      });
+    }
+
+    function saveEditedScores() {
+      const select = qs('edit-round-select');
+      const roundId = parseInt(select.value, 10);
+      const round = rounds.find(r => r.id === roundId);
+      if (!round) return;
+      const container = qs('edit-scores-players');
+      const selects = container.querySelectorAll('select[data-player-id]');
+      const newPlacements = {};
+      selects.forEach(sel => {
+        const id = parseInt(sel.getAttribute('data-player-id'), 10);
+        const place = parseInt(sel.value, 10);
+        newPlacements[id] = place;
+      });
+      const num = Object.keys(newPlacements).length;
+      if (num === 0) {
+        alert("Each player must have a placement.");
+        return;
+      }
+      round.placements = newPlacements;
+      round.numPlayers = num;
+      recomputeStats();
+      renderScoreboard();
+      hideModal('edit-scores-modal');
+      saveState();
+    }
+
+    function startScoreboard() {
+      const active = getActivePlayers();
+      if (active.length < 3) {
+        alert("You need at least 3 players to start.");
+        return;
+      }
+      active.forEach((p, idx) => {
+        if (!p.name || !p.name.trim()) {
+          p.name = "Player " + (idx + 1);
+        }
+      });
+      gameStarted = true;
+      renderPlayersSetup();
+      renderScoreboard();
+      refreshGameOptions();
+      showPage('scoreboard');
+      saveState('scoreboard');
+    }
+
+    function confirmExit() {
+      hideModal('exit-modal');
+      recomputeStats();
+      renderFinalScoreboard();
+      showPage('final');
+      saveState('final');
+    }
+
+    function resetPlayersAndRounds() {
+      players = [];
+      nextPlayerId = 1;
+      rounds = [];
+      nextRoundId = 1;
+      currentGame = null;
+      gameStarted = false;
+      addPlayer("Player 1");
+      addPlayer("Player 2");
+      addPlayer("Player 3");
+      renderPlayersSetup();
+      renderScoreboard();
+      refreshGameOptions();
+      gameInput.value = "";
+    }
+
+    function openAddPlayerModal() {
+      const input = qs('new-player-name-input');
+      input.value = "";
+      showModal('add-player-modal');
+      setTimeout(() => { input.focus(); }, 0);
+    }
+
+    function confirmAddPlayer() {
+      const input = qs('new-player-name-input');
+      let name = input.value.trim();
+      const totalPlayers = getTotalPlayers();
+      if (!name) {
+        name = "Player " + (totalPlayers + 1);
+      }
+      const added = addPlayer(name);
+      if (added) {
+        hideModal('add-player-modal');
+      }
+    }
+
+    function init() {
+      startupPage = qs('startup-page');
+      scoreboardPage = qs('scoreboard-page');
+      finalPage = qs('final-page');
+      startupPlayersContainer = qs('startup-players');
+      startGameBtn = qs('start-game-btn');
+      startupAddBtn = qs('startup-add-player-btn');
+      placementBtn = qs('placement-settings-btn');
+      randomSettingsBtn = qs('random-settings-btn');
+      randomGameBtn = qs('random-game-btn');
+      scoreboardAddPlayerBtn = qs('scoreboard-add-player-btn');
+      exitBtn = qs('exit-btn');
+      gameInput = qs('game-select-input');
+      gameListDatalist = qs('game-list');
+      addScoresBtn = qs('add-scores-btn');
+      editScoresBtn = qs('edit-scores-btn');
+      scoreboardBody = qs('scoreboard-body');
+      audienceScoreboardBody = qs('audience-scoreboard-body');
+      audienceSection = qs('audience-section');
+      finalScoreboardBody = qs('final-scoreboard-body');
+      addScoresGameSelect = qs('add-scores-game-select');
+
+      startupAddBtn.addEventListener('click', () => addPlayer());
+      startGameBtn.addEventListener('click', startScoreboard);
+      placementBtn.addEventListener('click', openPlacementModal);
+      randomSettingsBtn.addEventListener('click', openRandomSettingsModal);
+      scoreboardAddPlayerBtn.addEventListener('click', openAddPlayerModal);
+      exitBtn.addEventListener('click', () => showModal('exit-modal'));
+      randomGameBtn.addEventListener('click', handleRandomGame);
+      gameInput.addEventListener('change', handleGameSelection);
+      addScoresBtn.addEventListener('click', openAddScoresModal);
+      editScoresBtn.addEventListener('click', openEditScoresModal);
+      addScoresGameSelect.addEventListener('change', handleAddScoresGameChange);
+
+      document.querySelectorAll('.modal-close, [data-close]').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.getAttribute('data-close') || (el.closest('.modal-overlay') && el.closest('.modal-overlay').id);
+          if (id) hideModal(id);
+        });
+      });
+
+      qs('placement-save-btn').addEventListener('click', savePlacementSettings);
+      qs('random-save-btn').addEventListener('click', saveRandomSettings);
+      qs('add-scores-confirm-btn').addEventListener('click', confirmAddScores);
+      qs('edit-scores-save-btn').addEventListener('click', saveEditedScores);
+      qs('exit-confirm-btn').addEventListener('click', confirmExit);
+      qs('edit-round-select').addEventListener('change', loadEditRound);
+      qs('add-player-confirm-btn').addEventListener('click', confirmAddPlayer);
+      qs('final-close-btn').addEventListener('click', () => {
+        resetPlayersAndRounds();
+        showPage('startup');
+        saveState('startup');
+      });
+
+      if (!loadState()) {
+        resetPlayersAndRounds();
+        showPage('startup');
+        saveState('startup');
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+  </script>
+</body>
+</html>
